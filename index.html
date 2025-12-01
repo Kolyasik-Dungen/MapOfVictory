@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Of Victory</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #1a2a3a 0%, #2c3e50 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 8px;
+            font-size: 2rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .top-logo {
+            position: fixed; /* Фиксированное позиционирование относительно окна браузера */
+            top: 10px; /* Отступ от верхнего края */
+            left: 50px; /* Отступ от правого края */
+            width: 60px; /* Фиксированная ширина */
+            height: auto; /* Автоматическая высота для сохранения пропорций */
+            z-index: 1000; /* Поверх всех элементов */
+            background: rgba(255, 255, 255, 0.9); /* Белый фон с прозрачностью */
+            padding: 8px; /* Внутренние отступы */
+            border-radius: 8px; /* Скругленные углы */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Тень для выделения */
+            transition: all 0.3s ease; /* Плавные анимации */
+        }
+
+/* Эффект при наведении */
+        .top-logo:hover {
+            transform: scale(1.05); /* Увеличение при наведении */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .map-container {
+            flex: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        #map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border: none;
+        }
+
+        .sidebar {
+            position: fixed;
+            right: -450px;
+            top: 20px;
+            width: 430px;
+            height: calc(100% - 40px);
+            background: rgba(28, 34, 47, 0.95);
+            padding: 25px;
+            box-shadow: -4px 0 25px rgba(0, 0, 0, 0.5);
+            transition: right 0.4s ease;
+            overflow-y: auto;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE и Edge */
+        }
+
+        .sidebar.active {
+            right: 20px;
+        }
+
+        .close-sidebar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #FF4500;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .close-sidebar:hover {
+            background: #FF4500;
+            transform: scale(1.1);
+        }
+
+        .movie-info {
+            margin-bottom: 20px;
+            color: #ecf0f1;
+        }
+
+        .movie-poster {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .movie-title {
+            color: #fff;
+            margin-bottom: 5px;
+            font-size: 1.6rem;
+            text-align: left;
+            flex: 1;
+        }
+
+        .conteiner-title-kino {
+            display: flex;
+            justify-content: space-between; /* Текст слева, рейтинг справа */
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .movie-detail {
+            font-size: 14px;
+            font-weight: 500;
+            color: #bdc3c7;
+            display: flex;
+            align-items: center;
+        }
+
+        .movie-rating {
+            display: inline-block;
+            background: #00BF06;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Высокий рейтинг (8.0+) - зеленый */
+        .rating-high {
+            background: linear-gradient(135deg, #00BF06, #00a805);
+            box-shadow: 0 2px 4px rgba(0, 191, 6, 0.3);
+        }
+
+/* Хороший рейтинг (6.0-7.9) - желтый/оранжевый */
+        .rating-medium {
+            background: linear-gradient(135deg, #FFA500, #FF8C00);
+            box-shadow: 0 2px 4px rgba(255, 165, 0, 0.3);
+        }
+
+/* Средний рейтинг (4.0-5.9) - оранжевый/красный */
+        .rating-average {
+            background: linear-gradient(135deg, #FF6B35, #FF4500);
+            box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3);
+        }
+
+/* Низкий рейтинг (0-3.9) - красный */
+        .rating-low {
+            background: linear-gradient(135deg, #FF3B30, #D70015);
+            box-shadow: 0 2px 4px rgba(255, 59, 48, 0.3);
+        }
+
+        .movie-synopsis {
+            font-size: 16px;
+            font-weight: 500;
+            color: #fff;
+            line-height: 1.7;
+            text-align: justify;
+        }
+
+        .tooltip {
+            position: fixed;
+            background: rgba(28, 34, 47, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            width: 190px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .film-tooltip.left-aligned {
+            transform: translateX(0);
+        }
+
+        .film-tooltip.right-aligned {
+            transform: translateX(-100%);
+        }
+
+        .film-header {
+          color: #fff;
+          display: grid;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 5px;
+          margin-right: 5px;
+        }
+
+        .tooltip.active {
+            opacity: 1;
+        }
+
+        .tooltip-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.3;
+            max-width: 200px;
+        }
+
+        .rating-container {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 10px 0;
+        }
+
+        .rating-container-rgiht {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 10px 0;
+          flex-shrink: 0;
+        }
+
+        .film-rating {
+          display: inline-block;
+          background: #00BF06;
+          color: white;
+          padding: 5px 10px;
+          border-radius: 20px;
+          font-weight: 600;
+          font-size: 14px;
+          white-space: nowrap;
+        }
+
+        .kinopoisk-logo {
+          display: block;
+          width: 30px;
+          height: auto;
+        }
+
+        .film-poster {
+          width: 100%;
+          border-radius: 8px;
+          margin-bottom: 15px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .film-location {
+          font-size: 16px;
+          font-weight: 500;
+          color: #fff;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+        }
+
+        .location-icon {
+          margin-right: 8px;
+          color: #00BF06;
+        }
+
+        .film-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(26, 32, 44, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .bounds-notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 1000;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .bounds-notification.active {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+          .top-logo {
+              width: 50px; /* Меньший размер на мобильных */
+              top: 10px;
+              left: 50px;
+              padding: 6px;
+          }
+
+          .sidebar {
+              right: 0;
+              top: auto;
+              bottom: -100%;
+              width: calc(100% - 40px); /* Отступы по 20px с каждой стороны */
+              max-width: 500px; /* Максимальная ширина */
+              height: auto;
+              max-height: 80vh;
+              left: 50%;
+              transform: translateX(-50%); /* Идеальное центрирование */
+              border-radius: 20px;
+              transition: bottom 0.4s ease, transform 0.4s ease;
+              padding: 25px;
+              margin: 0;
+          }
+
+          .sidebar.active {
+              right: 0;
+              bottom: 20px;
+              top: 20px;
+              transform: translateX(-50%); /* Сохраняем центрирование */
+          }
+
+            .film-counter {
+                top: 10px;
+                right: 10px;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .film-marker {
+                background: #e74c3c;
+                border: 3px solid white;
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        @media (max-width: 768px) and (max-height: 900px) {
+            .top-logo {
+                width: 40px;
+                top: 10px;
+                left: 50px;
+            }
+
+            .sidebar {
+                height: calc(100vh - 20px);
+                max-height: none;
+            }
+
+            .sidebar.active {
+                right: 0;
+                bottom: 20px;
+                top: 20px;
+                transform: translateX(-50%); /* Сохраняем центрирование */
+            }
+
+            .film-marker {
+                background: #e74c3c;
+                border: 3px solid white;
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        /* Стили для маркеров с иконками фильмов */
+        .film-marker {
+            background: #e74c3c;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <img src="images/logo.png" alt="Логотип" class="top-logo">
+    <div class="container">
+        <div class="map-container">
+            <div id="map"></div>
+
+            <div class="film-tooltip" id="film-tooltip">
+                <!-- Информация о фильме будет загружена здесь -->
+            </div>
+
+            <div class="bounds-notification" id="bounds-notification">
+                Достигнута граница карты
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <button class="close-sidebar" id="close-sidebar">×</button>
+        <div class="movie-info" id="movie-info">
+            <!-- Информация о фильме будет загружена здесь -->
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Определяем границы карты (ограничиваем область просмотра)
+        const southWest = L.latLng(-70, -180);
+        const northEast = L.latLng(85, 180);
+        const bounds = L.latLngBounds(southWest, northEast);
+
+        // Инициализация карты с ограничениями
+        const map = L.map('map', {
+            maxBounds: bounds,
+            maxBoundsViscosity: 1.0, // Сила "прилипания" к границам (1.0 - максимальная)
+            minZoom: 2,
+            maxZoom: 10
+        }).setView([40, 10], 2);
+
+        // Добавление слоя OpenStreetMap с темным дизайном
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap contributors, © CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Ограничиваем зум карты
+        map.setMaxBounds(bounds);
+
+        // Обработчик для показа уведомления при достижении границ
+        map.on('drag', function() {
+            if (!map.getBounds().intersects(bounds)) {
+                document.getElementById('bounds-notification').classList.add('active');
+            }
+        });
+
+        map.on('dragend', function() {
+            document.getElementById('bounds-notification').classList.remove('active');
+        });
+
+        // Фильмы из Кинопоиска с местами съемок
+        const movies = [
+            {
+                title: "В августе 44-го",
+                link: "https://www.kinopoisk.ru/film/41381/",
+                rating: 8.3,
+                year: "2001",
+                location: "Молодечно, СССР",
+                lat: 54.3136,
+                lng: 26.8522,
+                genre: "военный, детектив, боевик",
+                country: "Россия, Беларусь",
+                poster: "https://m.media-amazon.com/images/M/MV5BNGVjODM2YjMtOGUwYy00ZDI2LWJlMjMtMTdlMWI2YTYyNDBhXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+                synopsis: "Лето 1944 года. Белоруссия уже освобождена, однако с её территории регулярно выходит в эфир группа лазутчиков, передавая врагам важную информацию о советских войсках. На поиски шпионов в район запеленгованной рации отправляется отряд во главе с офицером СМЕРШа."
+            },
+            {
+                title: "Список Шиндлера",
+                link: "https://www.kinopoisk.ru/film/329/",
+                rating: 8.8,
+                year: "1993",
+                location: "Краков, СССР",
+                lat: 50.0647,
+                lng: 19.9450,
+                genre: "драма, биография, история",
+                country: "США",
+                poster: "https://i.pinimg.com/originals/ab/2d/b7/ab2db7ed03167a7ce5408fa927634612.jpg",
+                synopsis: "Фильм рассказывает реальную историю загадочного Оскара Шиндлера, члена нацистской партии, преуспевающего фабриканта, спасшего во время Второй мировой войны почти 1200 евреев."
+            },
+            {
+                title: "В бой идут одни «старики»",
+                link: "https://www.kinopoisk.ru/film/25108/",
+                rating: 8.7,
+                year: "1973",
+                location: "Киев, СССР",
+                lat: 50.4504,
+                lng: 30.5245,
+                genre: "драма, военный, музыкальный",
+                country: "СССР",
+                poster: "https://i.pinimg.com/originals/03/9b/bc/039bbcf2f0478f972a340075ce09ffd0.jpg",
+                synopsis: "Эта эскадрилья стала «поющей» - так капитан Титаренко подбирал себе новичков. Его «старикам» было не больше двадцати, но «желторотиков», пополнение из летных училищ ускоренного выпуска, в бой все равно, по возможности, не пускали. Им еще многое предстояло испытать - и жар боев, и радость первой победы над врагом, и величие братства, скрепленного кровью, и первую любовь, и горечь утраты... И настанет день, когда по команде «в бой идут одни старики» бывшие желторотики бросятся к своим самолетам..."
+            },
+            {
+                title: "Они сражались за Родину",
+                link: "https://www.kinopoisk.ru/film/438/",
+                rating: 8.5,
+                year: "1975",
+                location: "Сталинград, СССР",
+                lat: 48.7080,
+                lng: 44.5133,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "https://images.kinorium.com/movie/poster/68176/w1500_49935930.jpg",
+                synopsis: "Июль 1942 года. На подступах к Сталинграду обескровленные, измотанные советские войска ведут тяжелые оборонительные бои, неся огромные потери... Фильм рассказывает о подвиге рядовых солдат, любви к родной земле, об истинной цене победы..."
+            },
+            {
+                title: "А зори здесь тихие",
+                link: "https://www.kinopoisk.ru/film/43395/",
+                rating: 8.6,
+                year: "1972",
+                location: "Карелия, СССР",
+                lat: 63.0667,
+                lng: 32.4167,
+                genre: "драма, военный, история",
+                country: "СССР",
+                poster: "https://images.kinorium.com/movie/poster/63471/w1500_3090094.jpg",
+                synopsis: "В прифронтовой полосе группа девушек-зенитчиц вынуждена вступить в неравный бой с вражескими десантниками. Эти девчонки мечтали о большой любви, нежности, семейном тепле - но на их долю выпала жестокая война, и они до конца выполнили свой воинский долг…"
+            },
+            {
+                title: "Сталинград",
+                link: "https://www.kinopoisk.ru/film/468196/",
+                rating: 5.7,
+                year: "2013",
+                location: "Сталинград, СССР",
+                lat: 48.8,
+                lng: 44.6,
+                genre: "драма, военный, боевик",
+                country: "Россия",
+                poster: "https://media.kg-portal.ru/movies/s/stalingrad/posters/stalingrad_11.jpg",
+                synopsis: "1942-й год. Сталинград. Советские войска планируют контрнаступление на немецкие части, занявшие правый берег Волги. Наступление сорвано. Лишь разведчикам под командованием капитана Громова удается перебраться на другой берег и закрепиться в одном из домов. Им дан приказ удержать его любой ценой. Кроме нескольких чудом уцелевших советских солдат они находят в доме его последнюю жительницу – 19-летнюю Катю. Приказ отбить дом, захваченный противником, получает немецкий офицер Кан. На фоне одного из самых кровопролитных сражений в истории человечества разворачиваются истории любви и драматического противостояния характеров."
+            },
+            {
+                title: "Брестская крепость",
+                link: "https://www.kinopoisk.ru/film/436263/",
+                rating: 8.1,
+                year: "2010",
+                location: "Брестская крепость, Брест, СССР",
+                lat: 52.0828,
+                lng: 23.6553,
+                genre: "военный, боевик, драма",
+                country: "Беларусь, Россия",
+                poster: "https://gov.cap.ru/content2020/orgs/grvid_674/22%20%D0%B8%D1%8E%D0%BD%D1%8F/image/4.jpg",
+                synopsis: "История о героической обороне Брестской крепости, которая приняла на себя первый удар немецко-фашистских захватчиков 22 июня 1941 года. Рассказ о трёх главных очагах сопротивления, возглавляемых командиром полка Петром Гавриловым, комиссаром Ефимом Фоминым и начальником 9-й погранзаставы Андреем Кижеватовым."
+            },
+            {
+                title: "Семнадцать мгновений весны",
+                link: "https://www.kinopoisk.ru/series/89540/",
+                rating: 9.0,
+                year: "1973",
+                location: "Берлин, Германия",
+                lat: 52.5200,
+                lng: 13.4050,
+                genre: "военный, драма, приключения",
+                country: "СССР",
+                poster: "https://www.film.ru/sites/default/files/movies/posters/1617971-1436502.jpg",
+                synopsis: "Германия, канун окончания Второй мировой войны. Советский разведчик полковник Исаев, он же - штандартенфюрер СС Штирлиц, исполняет последние задания Центра, диктуемые ходом военных действий и политическими интригами верхов противоборствующих сторон."
+            },
+            {
+                title: "Т-34",
+                link: "https://www.kinopoisk.ru/film/930878/",
+                rating: 6.9,
+                year: "2018",
+                location: "Прага, Чехия",
+                lat: 50.0755,
+                lng: 14.4378,
+                genre: "военный, боевик, приключения",
+                country: "Россия",
+                poster: "https://m.media-amazon.com/images/I/81Qq+RZaAmL._AC_UL960_QL65_.jpg",
+                synopsis: "В ноябре 1941 года в деревне Нефёдовка вчерашний курсант Николай Ивушкин был вынужден принять командование единственным уцелевшим танком и вступить в неравное противостояние с немецкой танковой ротой, приближавшейся к Москве. Силами противника командовал опытный гауптман Клаус Ягер, но это не спасло его подразделение от поражения, хоть самому ему и удалось ранить нашего курсанта. Летом 1944 года уже пытавшийся совершить несколько побегов Ивушкин попадет в концлагерь в Тюрингии. Там же оказывается и его «старый знакомый» Ягер, который решает использовать навыки Николая для тренировки немецких кадетов. Он распоряжается собрать тому команду и выдать только что прибывшую с фронта новую модель танка Т-34, не зная, что идею побега Ивушкин не оставил."
+            },
+            {//10 фильм
+                title: "Девятаев",
+                link: "https://www.kinopoisk.ru/film/1249213/",
+                rating: 6.4,
+                year: "2021",
+                location: "Узедом остров, Германия",
+                lat: 54.1333,
+                lng: 13.7667,
+                genre: "военный, биография, боевик",
+                country: "Россия",
+                poster: "https://images.kinorium.com/movie/poster/2036921/w1500_50298422.jpg",
+                synopsis: "Лето 1944 года. Советские войска ведут наступление, но враг еще очень силен. Летчик-истребитель Михаил Девятаев попадает в плен. Ему предстоит сделать выбор — вернуться в небо, продолжив войну на стороне врага, или отправиться в концлагерь на остров Узедом. Отчаянный ас Девятаев выбирает третье — побег. Но с засекреченного острова, где идут испытания немецких крылатых ракет, нельзя убежать. Зато можно улететь — на аэродроме стоит новейший вражеский бомбардировщик «оружием возмездия» Третьего рейха на борту. Улететь — и совершить самый дерзкий побег в военной истории."
+            },
+            {
+                title: "Иди и смотри",
+                link: "https://www.kinopoisk.ru/film/42571/",
+                rating: 8.3,
+                year: "1985",
+                location: "Минск, СССР",
+                lat: 53.9000,
+                lng: 27.5667,
+                genre: "драма, военный, история",
+                country: "CCCP",
+                poster: "https://www.timeout.ru/wp-content/uploads/kpposters/42571.jpg",
+                synopsis: "1943 год, Великая Отечественная война. Подросток Флёра, откопав карабин среди обрывков колючей проволоки, ржавых пулемётных лент и простреленных касок, отправляется в лес к партизанам."
+            },
+            {
+                title: "Батальонъ",
+                link: "https://www.kinopoisk.ru/film/681881/",
+                rating: 7.2,
+                year: "2014",
+                location: "Петроград, СССР",
+                lat: 59.9375,
+                lng: 30.3086,
+                genre: "драма, военный, история",
+                country: "Россия",
+                poster: "https://static.kinoafisha.info/k/movie_posters/800x1200/upload/movie_posters/6/4/7/8168746/7ca92f13ae2455505f2ab9ab79b656bc.jpg",
+                synopsis: "Весна 1917 года. Февральская революция изменила жизнь России и ход Первой мировой войны. Государь уже отрёкся от престола. В окопах, где противостояние с немцами длится уже не один год, вовсю ведут пропаганду большевики. Они призывают к миру с неприятелем. Российское офицерство фактически ничего не может решить без одобрения так называемых солдатских комитетов. Армия находится на пороге окончательного разложения. По приказу Временного правительства для поднятия боевого духа создаётся женский «Батальон смерти» под командованием георгиевского кавалера Марии Бочкарёвой. Своей службой «Батальон смерти» подаёт пример храбрости, мужества и спокойствия, поднимает дух солдат и доказывает, что каждая из этих женщин-героев достойна звания воина русской армии."
+            },
+            {
+                title: "Спасти рядового Райана",
+                link: "https://www.kinopoisk.ru/film/371/",
+                rating: 8.2,
+                year: "1998",
+                location: "Пляж Омаха, Франция",
+                lat: 49.3692,
+                lng: -0.8820,
+                genre: "военный, боевик, история",
+                country: "США",
+                poster: "http://images-s.kinorium.com/movie/poster/109373/w1500_51624570.jpg",
+                synopsis: "Вторая мировая. Капитан Джон Миллер получает тяжелое задание. Вместе с отрядом из восьми человек он должен отправиться в тыл врага на поиски рядового Джеймса Райана, три родных брата которого почти одновременно погибли на полях сражений. Командование приняло решение демобилизовать Райана и отправить его на родину к безутешной матери. Но чтобы найти и спасти солдата, крошечному отряду придется пройти через все круги ада."
+            },
+            {
+                title: "Бесславные ублюдки",
+                link: "https://www.kinopoisk.ru/film/9691/",
+                rating: 8.0,
+                year: "2009",
+                location: "Париж, Франция",
+                lat: 48.8566,
+                lng: 2.3522,
+                genre: "боевик, драма, комедия",
+                country: "Германия, США",
+                poster: "https://pic.rutubelist.ru/video/2025-04-18/02/16/02160af1b4c4006810bb33697f477f65.jpg",
+                synopsis: "Вторая мировая война. В оккупированной немцами Франции группа американских солдат-евреев наводит страх на нацистов, жестоко убивая и скальпируя солдат."
+            },
+            {
+                title: "Шпионский мост",
+                link: "https://www.kinopoisk.ru/film/840884/",
+                rating: 7.5,
+                year: "2015",
+                location: "Мост Глинике, Берлин, Германия",
+                lat: 52.5144,
+                lng: 13.0789,
+                genre: "триллер, драма, военный",
+                country: "Германия, США, Индия",
+                poster: "https://images.kinorium.com/movie/poster/776249/w1500_50304257.jpg",
+                synopsis: "Действие фильма происходит на фоне серии реальных исторических событий и рассказывает о бруклинском адвокате Джеймсе Доноване, который оказывается в эпицентре холодной войны, когда ЦРУ отправляет его на практически невозможное задание – договориться об освобождении захваченного в СССР американского пилота самолета-разведчика U2."
+            },
+            {
+                title: "Ярость",
+                link: "https://www.kinopoisk.ru/film/740644/",
+                rating: 7.4,
+                year: "2014",
+                location: "Берлин, Германия",
+                lat: 52.56,
+                lng: 13.44,
+                genre: "боевик, драма, военный",
+                country: "Китай, США",
+                poster: "https://i.ytimg.com/vi/l2keRZ5GCaM/maxresdefault.jpg",
+                synopsis: "Стоит апрель 1945 года, и победа над немцами уже близка: союзники уверенно продвигаются вглубь вражеской территории, и оказываемое им сопротивление становится слабее день ото дня. Это, однако, совсем не значит, что на пути к победе союзные войска не потеряют еще множество людей, и многие солдаты сознают, что смерть ждет на расстоянии вытянутой руки. Среди закаленных в бою пессимистов, каждый день ведущих ожесточенные бои во имя победы, экипаж танка, на чьем дуле намалевано слово «Ярость». Командир экипажа, известный как Уордэдди, воевавший с нацистскими войсками сначала в Африке, а потом в Европе, преследует одну цель – выжить в войне и сохранить жизнь своим людям. Этот относительно амбициозный план оказывается под угрозой, когда к его экипажу присоединяется зеленый новобранец Норман Эллисон, никогда раньше не воевавший и еще не успевший привыкнуть к тому, что должен быстро и без колебаний обрывать человеческие жизни. Надежда выжить становится совсем призрачной, когда экипажу «Ярости» приходится принять участие в самоубийственной миссии."
+            },
+            {
+                title: "Пианист",
+                link: "https://www.kinopoisk.ru/film/740644/",
+                rating: 8.5,
+                year: "2002",
+                location: "Варшава, Польша",
+                lat: 52.2500,
+                lng: 20.9833,
+                genre: "дрма, военный, биография",
+                country: "Франция, Польша, Великобритания, Германия",
+                poster: "https://i.pinimg.com/736x/35/26/62/352662d5be86f30aca505e3dc4a0d063.jpg",
+                synopsis: "Фильм снят по автобиографии Владислава Шпильмана, одного из лучших пианистов Польши 30-х годов прошлого века. Главный герой фильма — Владек — занимается искусством до тех пор, пока территорию Польши не занимают нацисты. Жизнь всех евреев меняется: их помещают в Варшавское гетто, запрещают работать, унижают, заставляют носить отличительные повязки, а через некоторое время отправляют в концлагерь."
+            },
+            {
+                title: "Дюнкерк",
+                link: "https://www.kinopoisk.ru/film/931677/",
+                rating: 7.3,
+                year: "2017",
+                location: "Дюнкерк, Франция",
+                lat: 51.0344,
+                lng: 2.3768,
+                genre: "дрма, военный, биография",
+                country: "Франция, США, Великобритания, Нидерланды",
+                poster: "https://i.pinimg.com/originals/d9/42/82/d94282c01042e585cb1f093759c3c468.jpg",
+                synopsis: "Франция, Вторая мировая война. 400 тысяч британских солдат оказываются в окружении в Дюнкерке. Командование союзников пытается провести эвакуацию с моря, но корабли подвергаются постоянным авианалётам немцев, а французская армия вскоре не сможет сдерживать наступающие немецкие войска."
+            },
+            {
+                title: "Жизнь прекрасна",
+                link: "https://www.kinopoisk.ru/film/381/",
+                rating: 8.6,
+                year: "1997",
+                location: "Польша",
+                lat: 50.0357,
+                lng: 19.1783,
+                genre: "военный, комедия, драма",
+                country: "Италия",
+                poster: "https://i.pinimg.com/originals/3d/ad/b9/3dadb9862f74dc1aaca51d3443b4a0ed.jpg",
+                synopsis: "Во время Второй мировой войны из Италии в концлагерь были отправлены евреи - отец с маленьким сыном. Жена-итальянка добровольно последовала за ними. В лагере отец сказал мальчику, что всё происходящее вокруг является большой интересной игрой за приз в виде настоящего танка. И этот классный приз достанется тому мальчику, который сможет не попасться на глаза надзирателям."
+            },
+            {//20 фильм
+                title: "Битва за Севастополь",
+                link: "https://www.kinopoisk.ru/film/742026/",
+                rating: 7.7,
+                year: "2015",
+                location: "Севастополь, СССР",
+                lat: 44.6167,
+                lng: 33.5254,
+                genre: "военный, биография, драма",
+                country: "Россия, Украина",
+                poster: "https://i.ytimg.com/vi/YZhUh71hXbY/maxresdefault.jpg",
+                synopsis: "Любовь под нескончаемым огнем противника, дружба с Элеонорой Рузвельт, выступление на конференции, повлиявшее на исход Второй мировой войны, желание жить и страх потерять любимого человека - справится ли со всем этим хрупкая женщина? История Людмилы Павличенко – легендарной снайперши. Солдаты шли в бой с ее именем на устах, а враги устроили на нее охоту. На поле битвы она видела смерть и страдания, но самым серьезным испытанием для нее стала любовь, которую у нее могла забрать война."
+            },
+            {
+                title: "Уроки фарси",
+                link: "https://www.kinopoisk.ru/film/1209777/",
+                rating: 7.9,
+                year: "2020",
+                location: "Концлагерь Заксенхаузен, Ораниенбург, Германия",
+                lat: 52.7694,
+                lng: 13.2644,
+                genre: "военный, история, драма",
+                country: "Россия, Гурмания, Беларусь",
+                poster: "https://cdn.splay.uz/media/contents_meta/uroki-farsi22/images/poster_h.jpg",
+                synopsis: "1942 год, оккупированная Европа. Оказавшись в концлагере, бельгиец еврейского происхождения Жиль Кремье выдает себя за перса — для него это единственная возможность остаться в живых. Довольные таким редким уловом немецкие солдаты приводят Жиля к концлагерному повару Клаусу Коху, который мечтает, как только закончится война, уехать в Иран и открыть там ресторан. Кох ищет настоящего перса, который научит его говорить на фарси. Так начинается история Жиля Кремье и Клауса Коха — еврея и немца, узника и тюремщика, учителя и ученика."
+            },
+            {
+                title: "Мальчик в полосатой пижаме",
+                link: "https://www.kinopoisk.ru/film/281251/",
+                rating: 8.2,
+                year: "2008",
+                location: "Концлагерь Аушвиц-Биркенау, Освенцим, Польша",
+                lat: 50.0357,
+                lng: 19.1783,
+                genre: "военный, драма",
+                country: "Великобритания, США",
+                poster: "https://i.pinimg.com/originals/7c/7f/20/7c7f206d6e0ad6865dae55e3b80151b1.jpg",
+                synopsis: "История, происходящая во время Второй мировой войны и показанная сквозь глаза невинного и ничего не подозревающего о происходящих событиях Бруно, восьмилетнего сына коменданта концентрационного лагеря. Его случайное знакомство и дружба с еврейским мальчиком по другую сторону ограды лагеря, в конечном счете, приводит к самым непредсказуемым и ошеломительным последствиям."
+            },
+            {
+                title: "По соображениям совести",
+                link: "https://www.kinopoisk.ru/film/649917/",
+                rating: 8.2,
+                year: "2016",
+                location: "Утёс Маэда, Окинава, Япония",
+                lat: 26.3667,
+                lng: 127.8667,
+                genre: "биография, военный, драма",
+                country: "США",
+                poster: "https://www.film.ru/sites/default/files/images/rridge.jpg",
+                synopsis: "Медик американской армии времён Второй мировой войны Десмонд Досс, который служил во время битвы за Окинаву, отказывается убивать людей и становится первым идейным уклонистом в американской истории, удостоенным Медали Почёта."
+            },
+            {
+                title: "Операция «Валькирия»",
+                link: "https://www.kinopoisk.ru/film/309475/",
+                rating: 7.4,
+                year: "2008",
+                location: "Растенбург, Восточная Пруссия",
+                lat: 54.0796,
+                lng: 21.4936,
+                genre: "триллер, драма, военный",
+                country: "Великобритания, Франция, Германия, Италия, Испания, Япония, США",
+                poster: "https://images.kinorium.com/movie/poster/412363/w1500_3501517.jpg",
+                synopsis: "История героя сопротивления полковника Клауса фон Штауффенберга, возглавившего заговор против Гитлера. В 1944 году он попытался взорвать диктатора, пронеся в портфеле бомбу, но все, что ему удалось — только ранить фюрера."
+            },
+            {
+                title: "Мидуэй",
+                link: "https://www.kinopoisk.ru/film/1045457/",
+                rating: 7.0,
+                year: "2019",
+                location: "Атолл Мидуэй, США",
+                lat: 28.12,
+                lng: 177.21,
+                genre: "военный, боевик, история",
+                country: "США, Китай, Канада, Гонконг",
+                poster: "https://www.timeout.ru/wp-content/uploads/kpposters/1045457.jpg",
+                synopsis: "История одного из самых масштабных и стратегически важных морских сражений на Тихом океане Второй мировой войны. После разгрома японской авиацией большей части флота США в Перл-Харборе до этого придерживавшаяся нейтралитета Америка вступает в войну. В июне 1942 года остатки американского флота под командованием адмирала Честера Нимица сражаются с Императорским флотом Японии у атолла Мидуэй."
+            },
+            {
+                title: "Жена смотрителя зоопарка",
+                link: "https://www.kinopoisk.ru/film/569071/",
+                rating: 7.4,
+                year: "2017",
+                location: "Варшава, Польша",
+                lat: 52.2356,
+                lng: 21.3,
+                genre: "драма, военный, биография",
+                country: "США, Великобритания, Чехия",
+                poster: "https://images.justwatch.com/poster/9929516/s718/the-zookeepers-wife.jpg",
+                synopsis: "1939 год, Польша. Варшавским зоопарком управляет доктор Ян Жабинский и его жена Антонина. Их спокойная жизнь заканчивается 1 сентября, когда нацистская Германия начинает оккупацию Польши. С этого дня страшные новости следуют одна за другой: животные погибают, зоопарк должен быть ликвидирован, а польские евреи — отправлены в гетто. Среди изгоняемых оказывается подруга семьи, и жена предлагает спрятать её. Опасная идея, кажущаяся безумной, становится началом развёрнутой подпольной деятельности, в которой Антонина и Ян, рискуя собственными жизнями, будут спасать других людей."
+            },
+            {
+                title: "Оверлорд",
+                link: "https://www.kinopoisk.ru/film/1047365/",
+                rating: 6.3,
+                year: "2008",
+                location: "Нормандия, Франция",
+                lat: 49.3032,
+                lng: -1.2480,
+                genre: "ужасы, фантастика, боевик",
+                country: "США, Канада",
+                poster: "https://i.ytimg.com/vi/z1HkV8OU86g/maxresdefault.jpg",
+                synopsis: "Накануне высадки союзников в Нормандии отряд американских десантников проникает в оккупированный немцами посёлок, чтобы разрушить их радиомачту. Лазутчикам предстоит столкнуться не только с военными, но и с жуткими последствиями нацистских экспериментов."
+            },
+            {
+                title: "Мы из будущего",
+                link: "https://www.kinopoisk.ru/film/1047365/",
+                rating: 7.2,
+                year: "2008",
+                location: "Юг Ладожского озера, СССР",
+                lat: 59.8000,
+                lng: 31.0000,
+                genre: "фантастика, боевик, приключения",
+                country: "Россия",
+                poster: "https://images.kinorium.com/movie/poster/441035/w1500_37537098.jpg",
+                synopsis: "Действие картины разворачивается в двух временных пластах: в наши дни и в годы войны, во время тяжелых оборонительных боев августа 1942-го. Главные герои ленты – четверо «черных следопытов» (людей этой сомнительной профессии называют также «черными копателями») – Борман, Череп, Чуха и Спирт. Они ведут раскопки в тех местах, где когда-то шли бои, чтобы потом продать найденные медали, ордена, документы и немецкое оружие. Дело это выгодное, но опасное. Однажды на месте раскопок начинает происходить нечто странное: в найденных солдатских книжках, принадлежавших погибшим солдатам Красной армии, вдруг обнаруживаются фотографии самих «следопытов». Пытаясь прийти в себя, коллеги по «черному» бизнесу отправляются купаться в озере и... попадают в 1942 год. В самый разгар тяжелых боев."
+            },
+            {
+                title: "Игра в имитацию",
+                link: "https://www.kinopoisk.ru/film/635772/",
+                rating: 7.8,
+                year: "2014",
+                location: "Блетчли-парк, Великобритания",
+                lat: 52.0006,
+                lng: 0.7410,
+                genre: "биография, военный, драма",
+                country: "США",
+                poster: "https://i.pinimg.com/736x/45/6f/25/456f25bb359b9ac3012fb055f1445ef2.jpg",
+                synopsis: "Английский математик и логик Алан Тьюринг пытается взломать код немецкой шифровальной машины Enigma во время Второй мировой войны."
+            },
+            {//30 фильм
+                title: "Сошедшие с небес",
+                link: "https://www.kinopoisk.ru/film/43926/",
+                rating: 8.2,
+                year: "1986",
+                location: "мыс Хрони, СССР",
+                lat: 45,
+                lng: 36.13,
+                genre: "военный, драма",
+                country: "СССР",
+                poster: "https://i.postimg.cc/pV1LycD8/img0685d4644aa8efab8a7859f0b0e0a97d.jpg",
+                synopsis: "В катакомбах держит оборону небольшой отряд красноармейцев. Все страдают от нехватки воды, однако колодец охраняется немецкими пулемётчиками. Санитарка Маша из-за любви к раненому Сергею не выдержала и отправилась с ведром к колодцу; Сергей выходит с ней. Затем действие переносится в послевоенное время. Жизнь вернулась в нормальное русло, Сергей и Маша пытаются найти себя в ней, — решают бытовые проблемы, растят сына."
+            },
+            {
+                title: "Большая прогулка",
+                link: "https://www.kinopoisk.ru/film/61815/",
+                rating: 8.1,
+                year: "1966",
+                location: "Аваллон, Франция",
+                lat: 47.4900,
+                lng: 3.9083,
+                genre: "комедия, военный, приключения",
+                country: "Франция, Великобритания",
+                poster: "https://i.pinimg.com/originals/3e/61/f8/3e61f82686870e59baa45d855eb38839.jpg",
+                synopsis: "Небо над Парижем, 1942 год. Английский бомбардировщик, выполняющий важное задание, подбит немцами. Летчики покидают горящую машину, договариваясь встретиться в турецкой бане. Один из них приземляется на крыше дома, где работает маляр Огюстен Буве, а другой падает на крышу Парижской оперы и прячется вместе с парашютом в апартаментах главного дирижера. Командир экипажа «приводняется» в зоопарке — в пруду с тюленями."
+            },
+            {
+                title: "Бункер",
+                link: "https://www.kinopoisk.ru/film/48246/",
+                rating: 7.8,
+                year: "2004",
+                location: "Фюрербункер, Берлин",
+                lat: 52.5125,
+                lng: 13.3814,
+                genre: "драма, военный, биография",
+                country: "Германия, Австрия, Италия",
+                poster: "http://images-s.kinorium.com/movie/cover/284342/w1500_50219219.jpg",
+                synopsis: "Апрель 1945 года. Советские войска сжимают кольцо вокруг столицы Третьего рейха – Берлина. Перед лицом неминуемого поражения нацистская верхушка ищет спасение в секретном бункере, не желая покидать обезумевшего фюрера. Отвергнув предложения о побеге, Гитлер утверждает, что победа близка. Он приказывает сравнять Германию с землей и обсуждает детали своего самоубийства. Последнее убежище палачей пронизано агонией и страхом. И лишь те, кто выйдут живыми из этого бетонного ада, смогут поведать историю о последних минутах жизни и мрачном падении диктатора и его режима."
+            },
+            {
+                title: "Сопротивление",
+                link: "https://www.kinopoisk.ru/film/1048854/",
+                rating: 7.7,
+                year: "2019",
+                location: "Лион, Франция",
+                lat: 45.7640,
+                lng: 4.8357,
+                genre: "драма, военный, биография",
+                country: "США, Германия, Великобритания, Франция",
+                poster: "https://i.pinimg.com/originals/2f/0c/da/2f0cdaeedadfbddc666defe116d33c87.jpg",
+                synopsis: "После оккупации Франции нацистами начинающий мим Марсель Марсо вступает в ряды Сопротивления. Там он берется провернуть опасную операцию — спасти группу еврейских сирот из рук нацистов, переправив их через горы и леса Швейцарии."
+            },
+            {
+                title: "Операция «Мясной фарш»",
+                link: "https://www.kinopoisk.ru/film/650762/",
+                rating: 7.2,
+                year: "2021",
+                location: "Лондон, Великобритания",
+                lat: 51.5074,
+                lng: 0.1278,
+                genre: "драма, военный",
+                country: "США, Великобритания",
+                poster: "https://i.ytimg.com/vi/NLXq7yrM6Yw/maxresdefault.jpg",
+                synopsis: "Во время Второй мировой войны два офицера разведки используют труп и фальшивые документы, чтобы перехитрить немецкие войска."
+            },
+            {
+                title: "Зоя",
+                link: "https://www.kinopoisk.ru/film/1289029/",
+                rating: 4.7,
+                year: "2020",
+                location: "Деревня Петрищево, СССР",
+                lat: 55.5167,
+                lng: 36.3167,
+                genre: "история, боиграфия, военный",
+                country: "Россия",
+                poster: "http://images-s.kinorium.com/movie/poster/2082204/w1500_50512788.jpg",
+                synopsis: "Осень 1941 года. Вчерашняя школьница Зоя Космодемьянская уходит добровольцем в диверсионную школу. Её партизанский отряд попадает в засаду, а девушка схвачена немцами при попытке поджечь сарай. Допросы и пытки ни к чему не привели. Она не сказала ничего, что могло бы сорвать выполнение заданий другим группам. Немцы не смогли узнать даже её настоящее имя. Эта жертва не стала напрасной — её подвиг воспламенил миллионы сердец и помог нашим солдатам дойти до Берлина."
+            },
+            {
+                title: "Мария. Спасти Москву",
+                link: "https://www.kinopoisk.ru/film/4491071/",
+                rating: 4.1,
+                year: "2021",
+                location: "Серпуховский район, Московская область, СССР",
+                lat: 54.8931,
+                lng: 37.6783,
+                genre: "драма, военный, история",
+                country: "Россия",
+                poster: "https://ru-images-s.kinorium.com/movie/1080/2791650.jpg?1663151535",
+                synopsis: "Зима 1941 года, разгар битвы за Москву. Дочь священника, ставшая младшим лейтенантом НКВД, отправляется за линию фронта, чтобы вывезти оттуда чудотворную икону. По легенде, именно эта святыня должна спасти столицу."
+            },
+            {
+                title: "На Париж",
+                link: "https://www.kinopoisk.ru/film/1046486/",
+                rating: 3.3,
+                year: "2018",
+                location: "Вена, Австрия",
+                lat: 48.2082,
+                lng: 16.3738,
+                genre: "история, приключения",
+                country: "Россия",
+                poster: "https://images.kinomax.ru/550/films/4/4397/p_3a40654.jpg",
+                synopsis: "История советских офицеров, плечом к плечу прошедших войну и решивших отпраздновать Великую Победу в Париже. Друзья, выдержавшие страшный путь войны, доходят до самого Берлина и берут курс на новую жизнь — на любовь, захватывающие приключения и город мечты Париж."
+            },
+            {
+                title: "Летят журавли",
+                link: "https://www.kinopoisk.ru/film/7724/",
+                rating: 8.4,
+                year: "1957",
+                location: "Москва, СССР",
+                lat: 55.7558,
+                lng: 37.6173,
+                genre: "военный, мелодрама, история",
+                country: "СССР",
+                poster: "https://i.ytimg.com/vi/kTx_sIFvGDI/maxresdefault.jpg",
+                synopsis: "Рассказ о людях, в чьи судьбы безжалостно вторглась война. Не все смогли с честью вынести это испытание. В центре киноповести - трагическая история двух влюбленных, которых разлучила война."
+            },
+            {
+                title: "Ржев",
+                link: "https://www.kinopoisk.ru/film/1313591/",
+                rating: 7.2,
+                year: "2019",
+                location: "Ржев, СССР",
+                lat: 56.2622,
+                lng: 34.3281,
+                genre: "военный, драма, история",
+                country: "Россия",
+                poster: "http://images-s.kinorium.com/movie/poster/2204562/w1500_50417083.jpg",
+                synopsis: "1942 год. Ржевская битва. После боёв под селом Овсянниково от роты советских солдат осталась только треть. Бойцы пытаются продержаться до прихода подкрепления. Но из штаба поступает приказ удержать деревню любой ценой. Значит, отступать нельзя… Каждый из героев понимает, что выбраться живыми из этого переплёта почти невозможно. В этот момент в Овсянниково, едва не погибнув под вражеским обстрелом, прибывает младший лейтенант — начальник особого отдела, который должен найти и разоблачить предателей среди своих. Лейтенант уверен, что только так можно приблизить победу. События приобретают непредсказуемый оборот."
+            },
+            {//40 фильм
+                title: "1941. Крылья над Берлином",
+                link: "https://www.kinopoisk.ru/film/4533880/",
+                rating: 7.6,
+                year: "2022",
+                location: "остров Сааремаа, Эстония",
+                lat: 58.4283,
+                lng: 22.5094,
+                genre: "военный, боевик, история",
+                country: "Россия",
+                poster: "https://images.kinorium.com/movie/poster/2826837/h280_51584790.jpg",
+                synopsis: "История о подвиге лётчиков 1-го минно-торпедного авиационного полка ВВС Балтийского флота во главе с полковником Преображенским. У них была сложнейшая боевая задача — нанести первые бомбовые удары по Берлину, столице нацистской Германии."
+            },
+            {
+                title: "Собибор",
+                link: "https://www.kinopoisk.ru/film/905031/",
+                rating: 6.6,
+                year: "2018",
+                location: "Собибор, Польша",
+                lat: 51.9475,
+                lng: 23.5925,
+                genre: "военный, драма, история",
+                country: "Россия",
+                poster: "https://static.kinoafisha.info/k/movie_posters/800x1200/upload/movie_posters/0/2/7/8327720/755906c4dcc4d453b8d6825cabdf648c.jpeg",
+                synopsis: "В октябре 1943 года заключённые лагеря Собибор во главе с лейтенантом Красной армии Александром Печерским поднимают восстание — единственное успешное восстание в нацистском лагере смерти."
+            },
+            {
+                title: "Несокрушимый",
+                link: "https://www.kinopoisk.ru/film/1007496/",
+                rating: 5.6,
+                year: "2018",
+                location: "деревня Нефедьево, СССР",
+                lat: 55.94,
+                lng: 35.87,
+                genre: "военный, драма, история",
+                country: "Россия",
+                poster: "https://avatars.mds.yandex.net/i?id=261d6613ab01415f457c0d53505326e9_l-5227258-images-thumbs&n=13",
+                synopsis: "В основе фильма реальная история уникального подвига экипажа танка «КВ-1». Приняв неравный бой, экипаж Семена Коновалова уничтожил 16 танков, 2 бронемашины и 8 автомашин с живой силой противника в районе хутора Нижнемитякин Тарасовского района Ростовской области. Это история не плакатных героев, а разбитных, веселых, очень разных парней, которые просто хотели жить, но в решающую минуту сумели принять единственно верное решение и совершить подвиг достойный легенды."
+            },
+            {
+                title: "28 панфиловцев",
+                link: "https://www.kinopoisk.ru/film/764465/",
+                rating: 7.7,
+                year: "2016",
+                location: "разъезд Дубосеково, СССР",
+                lat: 55.9586,
+                lng: 36.0352,
+                genre: "военный, драма, история",
+                country: "Россия",
+                poster: "https://static.kinoafisha.info/k/movie_posters/1920x1080/upload/movie_posters/4/8/9/8154984/94ca126217a6a2667c294b251333ec5d.jpeg",
+                synopsis: "Осенью 1941-го года немецкие части, стоявшие возле Волоколамска, отделяло от Москвы каких-нибудь два часа по шоссе. Однако, на этом шоссе стояла 316-я стрелковая дивизия под командованием генерала И.В.Панфилова. Этот военачальник обладал настолько высоким авторитетом среди личного состава, что бойцы дивизии сами называли себя панфиловцами. А дивизию - панфиловской."
+            },
+            {
+                title: "Спасти Ленинград",
+                link: "https://www.kinopoisk.ru/film/764465/",
+                rating: 6.3,
+                year: "2019",
+                location: "Ленинград, СССР",
+                lat: 59.9375,
+                lng: 30.3086,
+                genre: "военный, боевик, драма",
+                country: "Россия",
+                poster: "https://m.media-amazon.com/images/M/MV5BMDYwMjNlMzctYjk2ZS00NzI5LTlkMGYtMzM4YjFlYTI5NmM4XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+                synopsis: "Сентябрь 1941 года. Юные влюблённые - сын капитана курсант-артиллерист Костя и дочь врага народа Настя - оказываются на барже №752, которая должна по Ладожскому озеру вывезти людей из блокадного Ленинграда. Старая посудина давно отслужила свой срок, но за неимением других вариантов капитан буксира соглашается взять на борт полторы тысячи пассажиров - вдвое больше, чем положено. Но вскоре после отправки баржи в путь благоприятный прогноз погоды сменяется штормовым предупреждением."
+            },
+            {
+                title: "Рубеж",
+                link: "https://www.kinopoisk.ru/film/1002714/",
+                rating: 6.9,
+                year: "2017",
+                location: "Невский пятачок, Ленинград, СССР",
+                lat: 59.8076,
+                lng: 30.9640,
+                genre: "фантастика, приключения, военный",
+                country: "Россия",
+                poster: "https://static.kinoafisha.info/k/movie_posters/1920x1080/upload/movie_posters/9/6/6/8326669/ce2fe857e2f02bf32abe98de0ad49138.jpeg",
+                synopsis: "У Михаила есть всё. Всё, кроме любви, и его это устраивает. Но вот он встречает ЕЁ, и всё, чего он добился в этой жизни, рушится в один миг. Не все умеют любить. Не каждому дано любить… Чтобы обрести право на любовь, Михаил получает возможность перемещаться во времени. Туда, где нет кредиток и гаджетов, где гибнут миллионы людей, и превращаются в руины города. Теперь, чтобы не сойти с ума и остаться в настоящем, ему придется принять правила опасного экзистенциального квеста."
+            },
+            {
+                title: "Подольские курсанты",
+                link: "https://www.kinopoisk.ru/film/1191022/",
+                rating: 8.4,
+                year: "2020",
+                location: "Подольск, СССР",
+                lat: 55.4312,
+                lng: 37.5445,
+                genre: "военный, драма, история",
+                country: "Россия",
+                poster: "https://images.kinorium.com/movie/poster/1689683/w1500_45172399.jpg",
+                synopsis: "Октябрь 1941 года, Подмосковье. Около трёх с половиной тысяч курсантов подольских артиллерийского и пехотного училищ получают приказ занять оборону на Ильинском рубеже и совместно с регулярными частями 43-й армии сдерживать наступление фашистских захватчиков, пока не подойдёт подкрепление. Погибая, вчерашние мальчишки держат оборону от многократно превышающих сил немцев и на двенадцать дней становятся преградой на пути врага к Москве."
+            },
+            {
+                title: "Африка",
+                link: "https://www.kinopoisk.ru/film/4365786/",
+                rating: 7.1,
+                year: "2021",
+                location: "Кировск, СССР",
+                lat: 59.9,
+                lng: 31,
+                genre: "мелодрама, военный, семейный",
+                country: "Россия",
+                poster: "https://static.kinoafisha.info/k/movie_posters/1080x1920/upload/movie_posters/2/0/7/8364702/ba27241c290a94057cdeec400069ebd4.jpg",
+                synopsis: "1943 год. На окраине блокадного Ленинграда, в опустевшей деревне остаются трое детей и их мать, которая слишком слаба для походов в лес в поисках еды. В один из дней сыновья отправляются в дорогу сами и оказываются перед недетским выбором — спасти семью или собаку, которую они находят на месте боя."
+            },
+            {
+                title: "Лётчик",
+                link: "https://www.kinopoisk.ru/film/1405968/",
+                rating: 7.7,
+                year: "2021",
+                location: "Новгородские болота, СССР",
+                lat: 52.1389,
+                lng: 24.5194,
+                genre: "военный, биография, драма",
+                country: "Россия",
+                poster: "https://cdn.culture.ru/images/daf92e32-2064-5ce3-a3c8-5605927db829",
+                synopsis: "Декабрь 1941 года. Летчик Николай Комлев успешно выполняет приказ и уничтожает немецкую танковую колонну, движущуюся к Москве. Но самолет Комлева подбит вражескими истребителями, и летчик чудом сажает свой Ил-2 на глухую лесную поляну. Кажется, самое страшное позади — он выжил в воздушном бою. Однако испытания только начинаются: раненому Комлеву предстоит проделать немыслимый путь, превозмогая мороз, боль и голод, спасаясь от волков и спецотряда нацистов, задача которых — найти его во что бы то ни стало. Летчика ведут воля к жизни, мужество и, конечно, любовь. Дома его ждет Ольга, именно ее образ согревает его в стужу и помогает двигаться вперед, к спасению. У него лишь один шанс выжить, чтобы вернуться к любимой, снова подняться в небо и победить."
+            },
+            {
+                title: "Солдатик",
+                link: "https://www.kinopoisk.ru/film/1254051/",
+                rating: 8.2,
+                year: "2018",
+                location: "Сталинград, СССР",
+                lat: 48.7080,
+                lng: 44.5133,
+                genre: "драма, военный",
+                country: "Россия, Беларусь",
+                poster: "https://i.ytimg.com/vi/x_UwCIa6d2o/maxresdefault.jpg",
+                synopsis: "История о волнующих и героических событиях, произошедших в жизни самого маленького солдата — героя Великой Отечественной Войны, шестилетнего Сережи Алешкова. Он потерял всех своих родных, попал в действующую армию. С шестилетним мальчиком затеяли игру в солдатика, чтобы сохранить ему детство, а он, чтобы соответствовать этому почетному для него званию, стал настоящим защитником Родины."
+            },
+            {//50 фильм
+                title: "Первый Оскар",
+                link: "https://www.kinopoisk.ru/film/1451291/",
+                rating: 7.3,
+                year: "2023",
+                location: "Истра, СССР",
+                lat: 55.9731,
+                lng: 36.9489,
+                genre: "драма, военный, история",
+                country: "Россия",
+                poster: "https://upload.wikimedia.org/wikipedia/ru/d/d8/%D0%9F%D0%B5%D1%80%D0%B2%D1%8B%D0%B9_%D0%9E%D1%81%D0%BA%D0%B0%D1%80_%28%D1%84%D0%B8%D0%BB%D1%8C%D0%BC%2C_2022%29.jpg",
+                synopsis: "Осень 1941 года. Немецкие войска на подступах к Москве. Студенты-операторы Лев Альперин и Иван Майский отказываются уезжать в эвакуацию и добиваются направления на фронт, чтобы с кинокамерами оказаться в эпицентре грандиозной битвы за Москву. А в мирном Лос-Анджелесе 15-я церемония вручения премии «Оскар» начинается с сенсации − главную кинонаграду Голливуда получает документальная лента из СССР."
+            },
+            {
+                title: "Калашников",
+                link: "https://www.kinopoisk.ru/film/1188248/",
+                rating: 7.3,
+                year: "2020",
+                location: "Ковров, СССР",
+                lat: 56.3556,
+                lng: 41.3267,
+                genre: "биография, история",
+                country: "Россия",
+                poster: "https://avatars.mds.yandex.net/i?id=a59a866571e334fe7cf771ccf9c92c95_l-10267652-images-thumbs&n=13",
+                synopsis: "Калашников. Все знают эту фамилию, но не все знают, какой долгий и тернистый путь прошёл парень-самоучка, чтобы в 28 лет создать легендарный автомат АК-47, который по сей день является символом оружейной мысли нашего времени."
+            },
+            {
+                title: "Сестрёнка",
+                link: "https://www.kinopoisk.ru/film/1178267/",
+                rating: 8.4,
+                year: "2019",
+                location: "деревня Якты-Куль, СССР",
+                lat: 52.8131,
+                lng: 56.5497,
+                genre: "драма, военный",
+                country: "Россия",
+                poster: "https://i.ytimg.com/vi/WdSSf2kxMJY/maxresdefault.jpg",
+                synopsis: "Сколько себя помнит Ямиль, война была всегда. Но Ямиль очень ждёт, когда она кончится - ведь тогда вернётся Отец, которого Ямиль знает только по фотографиям и письмам. Однажды Мама уезжает в далёкий город и привозит с собой молчаливую девочку Оксану и передает наказ Отца заботиться о ней, как о родной сестрёнке..."
+            },
+            {
+                title: "Семь пар нечистых",
+                link: "https://www.kinopoisk.ru/film/984366/",
+                rating: 7.0,
+                year: "2018",
+                location: "Новокуйбышевск, СССР",
+                lat: 53.0833,
+                lng: 49.9500,
+                genre: "боевки, драма, военный",
+                country: "Россия",
+                poster: "https://m.media-amazon.com/images/M/MV5BOTUxZWJlNDEtZjc3Ni00OTlkLWExZDctNzM3NzcwOWI3OWUzXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+                synopsis: "1941 г. Бунт в открытом море – это всегда страшно. Ненависть заключенных и охранников друг к другу копится десятилетиями. Эта ненависть переполняет людей. Бунт заключенных на корабле страшен вдвойне. Слишком много ненависти на ограниченном пространстве. Но все меняется, когда появляется общий враг."
+            },
+            {
+                title: "Крик тишины",
+                link: "https://www.kinopoisk.ru/film/1228407/",
+                rating: 8.5,
+                year: "2019",
+                location: "д. Кузомень, СССР",
+                lat: 66.7,
+                lng: 41,
+                genre: "драма, история, военный",
+                country: "Россия",
+                poster: "https://ru-images-s.kinorium.com/movie/1080/2015305.jpg?1740134716",
+                synopsis: "Блокадный Ленинград, февраль 1942 года. Заканчивается самая страшная блокадная зима. Зина Воронова совсем отчаялась. Ее трёхлетний сын Митя ослабел, а карточки на хлеб уже отоварены на два дня вперед. Последняя надежда — эвакуация. Но с маленькими детьми не берут. Тогда женщина идет на чудовищный шаг — эвакуируется, оставив сына одного в промерзшей квартире. Во время налета мальчика спасает девочка-подросток Катя. Девочка выдает Митю за своего брата и обещает себе сделать все, чтобы Митя выжил. Несмотря ни на что."
+            },
+            {
+                title: "Война Анны",
+                link: "https://www.kinopoisk.ru/film/963379/",
+                rating: 6.9,
+                year: "2018",
+                location: "Тернополь, СССР",
+                lat: 49.5500,
+                lng: 25.6000,
+                genre: "драма, военный",
+                country: "Россия",
+                poster: "https://resizer.mail.ru/p/bc51b52e-b41d-57fd-ad37-948c715c6bfc/AQACcsUhFYUyGEj27-Orfw5RNuY9gGzaj2FtDAOyF0YK_12I9T5mk66Ryc-oRGWBbIPR0XuQF2cwlJRhuXc4RwH3tI0.jpg",
+                synopsis: "Ноябрь 1941 года. Прошлого нет – его убили. Настоящее – смерть. Безопасно лишь внутри камина, стоящего в кабинете географии старой поселковой школы. Там Анна и устроила себе дом, стала жить. Но школа оказалась немецкой комендатурой, которая днем и ночью охраняется большими собаками. И любой звук и запах – враги, а голод и жажда – всегда… Так началась эта история, история выживания, история противоборства страшного мира взрослых и маленькой Анны. История девочки, победившей Войну."
+            },
+            {
+                title: "Прощаться не будем",
+                link: "https://www.kinopoisk.ru/film/957910/",
+                rating: 7.0,
+                year: "2018",
+                location: "Тула, СССР",
+                lat: 54.1930,
+                lng: 37.6178,
+                genre: "военный, драма, история",
+                country: "Россия",
+                poster: "https://avatars.mds.yandex.net/i?id=3d4ca816aa1007177a27bf39273667f6_l-5231989-images-thumbs&n=13",
+                synopsis: "Октябрь сорок первого года. Многотысячное немецкое войско наступает на Калинин (ныне Тверь), чтобы, захватив его, открыть себе прямой путь на Москву. На защите города всего две тысячи человек без танков и артиллерии. Единственная надежда задержать врага — эшелоны пятой стрелковой дивизии, которые вот-вот должны пройти через Калининскую станцию. Но диверсанты намерены сделать все, чтобы этого не случилось. Начальник Калининского гарнизона, майор Павел Сысоев, изо всех сил пытаясь сохранить в городе порядок и спокойствие, сам попадает под подозрение в причастности к вражеской диверсионной группе."
+            },
+            {
+                title: "Счастье в конверте",
+                link: "https://www.kinopoisk.ru/film/1234939/",
+                rating: 8.5,
+                year: "2019",
+                location: "Вышний Волочёк, СССР",
+                lat: 57.5913,
+                lng: 34.5645,
+                genre: "семейный, мелодрама",
+                country: "Россия",
+                poster: "https://kamgov.ru/files/2020/03/06/982c9ae72693cd427142bb2e90ab9a1b.jpg",
+                synopsis: "Три удивительные истории о любви и дружбе, о вере в мечту и связи поколений, о том, как не предавать себя и оставаться человеком в любой жизненной ситуации. В век технологий люди привыкли спешить, бежать, зарабатывать, забывая при этом о главном – о себе и своих настоящих желаниях. Нам кажется, что мы станем счастливее как только у нас появится новая машина или высокая зарплата. А все значительно проще – секрет счастья скрыт в душе каждого человека: в умении верить в чудо, дружить, любить, быть отважным, следовать за своей мечтой!"
+            },
+            {
+                title: "Тонкая красная линия",
+                link: "https://www.kinopoisk.ru/film/3983/",
+                rating: 7.4,
+                year: "1998",
+                location: "о. Гуадалканал, Соломоновы Острова",
+                lat: 9.6,
+                lng: 160.1,
+                genre: "драма, военный, история",
+                country: "США",
+                poster: "https://s1.afisha.ru/mediastorage/da/a1/d0705ddd9bbd4efda6d15770a1da.jpg",
+                synopsis: "Фильм рассказывает о нескольких месяцах жизни армейского подразделения, в том числе об участии этого подразделения в одной из решающих и сложных операций XX-го века - битве за Гуадалканал. Американские пехотинцы посланы на подмогу морским подразделениям, измотанным схваткой с японцами."
+            },
+            {
+                title: "Письма с Иводзимы",
+                link: "https://www.kinopoisk.ru/film/252260/",
+                rating: 7.6,
+                year: "2006",
+                location: "о. Иводзима, Япония",
+                lat: 24.78,
+                lng: 141.32,
+                genre: "драма, боевик, военный",
+                country: "США",
+                poster: "https://avatars.mds.yandex.net/i?id=739481fe79518034f7eb4879f41c675f_l-5244955-images-thumbs&n=13",
+                synopsis: "1945 год, Тихоокеанский театр военных действий. История японских солдат, которые держат оборону острова Иводзима и сражаются с превосходящими силами американских войск."
+            },
+            {//60 фильм
+                title: "Мост слишком далеко",
+                link: "https://www.kinopoisk.ru/film/5031/",
+                rating: 7.1,
+                year: "1977",
+                location: "Арнем, Нидерландах",
+                lat: 51.9717,
+                lng: 5.9111,
+                genre: "военный, история, боевик",
+                country: "США, Великобритания",
+                poster: "https://s00.yaplakal.com/pics/pics_preview/5/0/7/8289705.jpg",
+                synopsis: "В сентябре 1944 года после успешного вторжения в Нормандию союзники готовят тайную операцию «Маркет Гарден»: дерзкий план, призванный быстро положить конец Второй мировой войне путем воздушного налета на Германию и уничтожения всех военных заводов Рейха. Однако сочетание неудачной боевой тактики, ошибочных разведданных, невезения и плохой погоды привело к катастрофе."
+            },
+            {
+                title: "Отец солдата",
+                link: "https://www.kinopoisk.ru/film/44218/",
+                rating: 8.3,
+                year: "1964",
+                location: "Сигнахи, СССР",
+                lat: 41.8944,
+                lng: 45.6897,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "https://images.kinorium.com/movie/poster/141717/w1500_52939291.jpg",
+                synopsis: "Противоестественность войны для человека - труженика, созидателя - показана на примере судьбы старого крестьянина-виноградаря из Грузии. Георгий Махарашвили едет повидаться с сыном, который ранен и находится в госпитале. Но пока отец добирается до места назначения, сын снова отправляется на фронт. Однако Георгий уже не может вернуться в родную деревню. Он вместе с советской армией проходит весь ее путь - путь до Берлина, до Победы над фашизмом."
+            },
+            {
+                title: "Аты-баты, шли солдаты...",
+                link: "https://www.kinopoisk.ru/film/43553/",
+                rating: 8.2,
+                year: "1976",
+                location: "село Великая Багачка, СССР",
+                lat: 49.7833,
+                lng: 34.1000,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "https://avatars.mds.yandex.net/i?id=24bb1d3b39050f7316826538304a0970_l-4079110-images-thumbs&n=13",
+                synopsis: "Они погибли в 1944 году, их было всего восемнадцать человек - комсомольский взвод, остановивший колонну немецких танков. Трагическое и комедийное, героическое и лирическое сплелись на экране в необычную ткань повествования об отцах, навсегда оставшихся молодыми, и о детях, пришедших туда, где ровно тридцать лет назад приняли свой последний смертный бой самые родные для них люди..."
+            },
+            {
+                title: "Двадцать дней без войны",
+                link: "https://www.kinopoisk.ru/film/44339/",
+                rating: 8.1,
+                year: "1976",
+                location: "Ташкент, СССР",
+                lat: 41.2995,
+                lng: 69.2401,
+                genre: "драма, мелодрама, военный",
+                country: "СССР",
+                poster: "https://avatars.dzeninfra.ru/get-zen_doc/9736637/pub_6499f8a054f22a5fe72928ce_64a90268bb2aa01ec8f6a21f/scale_1200",
+                synopsis: "Конец 1942 года. Фронтовой журналист Лопатин приезжает в Ташкент в 20-дневный отпуск за Сталинград. Ему, оглушенному и ослепленному огнем, мирная жизнь кажется странной и непривычной: размокшие саманные домики, снег пополам с грязью, хлебные карточки, судорожно зажатые в кулаке, сводки от Советского Информбюро, убогий быт, похоронки и … театры, которые продолжали работу в тылу. За 20 дней отпуска без войны Лопатин успевает побывать на Ташкентской киностудии, где снимается фильм по его военным очеркам, встретить новый 1943 год в мирной компании и пережить яркую любовь."
+            },
+            {
+                title: "Живые и мертвые",
+                link: "https://www.kinopoisk.ru/film/45336/",
+                rating: 8.6,
+                year: "1963",
+                location: "Смоленск, СССР",
+                lat: 54.7826,
+                lng: 32.0453,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "https://m.media-amazon.com/images/M/MV5BYjU1ODk0MzItYzFhMS00NzEzLTkzMjQtY2JiODc3ZWU3YTM5XkEyXkFqcGc@._V1_.jpg",
+                synopsis: "Журналиста Ивана Синцова известие о вероломном нападении нацистской Германии застает во время южного отпуска. Как фронтовой корреспондент он становится свидетелем тяжелых событий первых месяцев войны - многочисленных отступлений 1941 года."
+            },
+            {
+                title: "На войне как на войне",
+                link: "https://www.kinopoisk.ru/film/46285/",
+                rating: 8.6,
+                year: "1968",
+                location: "Кременчуг, СССР",
+                lat: 49.1,
+                lng: 33.42,
+                genre: "военный, драма",
+                country: "СССР",
+                poster: "http://images-s.kinorium.com/movie/poster/59240/w1500_52939119.jpg",
+                synopsis: "Младшего лейтенанта, только закончившего военное училище, назначили командиром «самоходки» с экипажем опытных и бывалых бойцов. Об их жизни, боевой и будничной рассказывает этот фильм."
+            },
+            {
+                title: "Проверка на дорогах",
+                link: "https://www.kinopoisk.ru/film/43332/",
+                rating: 8.1,
+                year: "1971",
+                location: "д. Красные Горки, СССР",
+                lat: 57.1325,
+                lng: 28.2992,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "https://avatars.mds.yandex.net/i?id=7ca51460c874d9fb8313a4be611a690cf192bb27-5521583-images-thumbs&n=13",
+                synopsis: "Зима 1942 года. В одной из северо-западных областей России, оккупированной фашистами, действует партизанский отряд лейтенанта Ивана Локоткова, в прошлом - сельского милиционера. Отряд кормить нечем: в округе - одни сожженные деревни и каратели. Командир принимает решение захватить фашистский эшелон с продовольствием на узловой станции, где охраняется каждый метр. Провести операцию берется раскаявшийся полицай Лазарев, которого немцы знают в лицо. Но можно ли ему довериться?.."
+            },
+            {
+                title: "Битва за Англию",
+                link: "https://www.kinopoisk.ru/film/10363/",
+                rating: 6.7,
+                year: "1969",
+                location: "графство Кент, Англия",
+                lat: 51.1095,
+                lng: 0.9669,
+                genre: "драма, военный",
+                country: "Великобритания",
+                poster: "https://resizer.mail.ru/p/0dc8f3d2-a0ed-5de8-9e12-7f08447cb35e/AQACCVv_EzkDwpaWh8iVk1Zhia6UbF0ZWSasrz5tBXWpeMft4OhG4Za4HeP8RbGiqntjwYCCESSi-4MblfQHS6m7mCg.jpg",
+                synopsis: "Разгар Второй мировой. Германия торопится закончить победный марш по Европе. Осталась непокоренной лишь Англия и для десантной операции Рейху необходимо полное господство над Королевским Воздушным Флотом. Завязывается величайшая воздушная битва в истории. Дни, недели и месяцы, по всему побережью «Спитфайры» и «Мессершмитты» крутят стремительную огненную карусель вокруг немецких бомбардировщиков, которые размеренными волнами день за днем накатываются на замершие города. Королевство превратилось в огромное бомбоубежище, над которым непрерывно идут жестокие схватки. Страна из последних сил строит и бросает в бой новые и новые самолеты, чтобы остановить эти смертельные стаи..."
+            },
+            {
+                title: "Самый длинный день",
+                link: "https://www.kinopoisk.ru/film/1351/",
+                rating: 6.2,
+                year: "1972",
+                location: "Сен-Мер-Эглиз, Франция",
+                lat: 49.4089,
+                lng: -1.3169,
+                genre: "военный, боевик, драма",
+                country: "США",
+                poster: "https://en-images.kinorium.com/movie/1080/52823.jpg?1512750254",
+                synopsis: "Картина повествует о знаменитой высадке в Нормандии, легендарном дне «Д» - 6 июня 1944 года. Ранним утром того дня армада из 5 тысяч судов армии союзников, сосредоточенных на Британских островах, пересекла Ла-Манш и начала высадку экспедиционных сил на побережье Нормандии. Как для союзников, так и для немцев это был самый долгий день…"
+            },
+            {
+                title: "Пушки острова Наварон",
+                link: "https://www.kinopoisk.ru/film/7691/",
+                rating: 7.1,
+                year: "1961",
+                location: "о. Родос, Греция",
+                lat: 36.4333,
+                lng: 27.3500,
+                genre: "боевик, военный, история",
+                country: "Великобритания, США",
+                poster: "https://i.pinimg.com/736x/dc/1d/d6/dc1dd687c4541662f0b29b9dd9c3f079.jpg",
+                synopsis: "Греция, 1943 год. Чтобы склонить нейтральную Турцию к участию в войне в качестве союзника, Германия собирается совершить блицкриг на остров Керос, где находятся две тысячи британских солдат, которые оказались в ловушке, поскольку подходы с моря блокируют две мощных немецких пушки с радарным наведением, расположенные на соседнем острове Наварон. После неудачной попытки уничтожить пушки с воздуха и получения данных разведки, что до начала блицкрига осталось всего неделя, британское командование разрабатывает рискованный план: группа коммандос во главе с капитаном Китом Мэллори должна проникнуть на остров Наварон и уничтожить немецкую батарею."
+            },
+            {//70 фильм
+                title: "Торпедоносцы",
+                link: "https://www.kinopoisk.ru/film/42271/",
+                rating: 8.1,
+                year: "1983",
+                location: "Полярный, СССР",
+                lat: 69.0731,
+                lng: 33.4233,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "http://images-s.kinorium.com/movie/poster/211959/w1500_2741757.jpg",
+                synopsis: "Фильм по мотивам военных рассказов Юрия Германа. 1944-й год. Вторая мировая война. Полк морской авиации базируется на небольшом аэродроме. Для летчиков это одновременно - и фронт, и тыл. Они выполняют боевые задания и возвращаются к своим семьям. Но каждый вылет может оказаться последним."
+            },
+            {
+                title: "Хроника пикирующего бомбардировщика",
+                link: "https://www.kinopoisk.ru/film/44800/",
+                rating: 8.4,
+                year: "1967",
+                location: "поселок Демянск, СССР",
+                lat: 57.39,
+                lng: 32.28,
+                genre: "военный",
+                country: "СССР",
+                poster: "https://static.kinoafisha.info/k/movie_posters/1920x1080/upload/movie_posters/0/6/0/8120060/f48907252f5853e2e435850ebaa4ad98.jpg",
+                synopsis: "Трое мальчишек, со студенческой скамьи попавшие на фронт, в эскадрилью, гоняют консервную банку по взлетному полю в перерывах между боями, изобретают ликер «шасси», вступаются за честь оскорбленной девушки..."
+            },
+            {
+                title: "Горячий снег",
+                link: "https://www.kinopoisk.ru/film/44582/",
+                rating: 8.3,
+                year: "1972",
+                location: "Сталинград, СССР",
+                lat: 48.4000,
+                lng: 44.5000,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "https://m.media-amazon.com/images/M/MV5BMzA4ZWY0YjctMzljNi00NDkyLWJiMjgtNmNiZTcxMDJiYjY4XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+                synopsis: "Фильм рассказывает об одном из эпизодов героического сражения против фашистов на подступах к Сталинграду, в котором в полной мере проявились стойкость и сила духа русских солдат, защищавших родную землю."
+            },
+            {
+                title: "Они сражались за Родину",
+                link: "https://www.kinopoisk.ru/film/42770/",
+                rating: 8.5,
+                year: "1975",
+                location: "Сталинград, СССР",
+                lat: 48.6900,
+                lng: 43.5300,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "https://topwar.ru/uploads/posts/2013-09/1379944198_18486.jpg",
+                synopsis: "Июль 1942 года. На подступах к Сталинграду обескровленные, измотанные советские войска ведут тяжелые оборонительные бои, неся огромные потери... Фильм рассказывает о подвиге рядовых солдат, любви к родной земле, об истинной цене победы..."
+            },
+            {
+                title: "Судьба человека",
+                link: "https://www.kinopoisk.ru/film/44027/",
+                rating: 8.5,
+                year: "1959",
+                location: "Воронеж, СССР",
+                lat: 51.660781,
+                lng: 39.200296,
+                genre: "драма, военный",
+                country: "СССР",
+                poster: "https://s1.afisha.ru/mediastorage/49/46/719c892e3ada45908d9e465a4649.jpg",
+                synopsis: "Фильм рассказывает о русском солдате, которого война подвергла страшным испытаниям, лишила дома и семьи, бросила в концлагерь. Но судьба не сломила его дух - он выжил, отстоял своё право быть человеком, сохранил способность любить..."
+            },
+            {
+                title: "Паттон",
+                link: "https://www.kinopoisk.ru/film/433/",
+                rating: 7.0,
+                year: "1970",
+                location: "о. Сицилия, Италия",
+                lat: 37.6000,
+                lng: 14.0150,
+                genre: "драма, военный, биография",
+                country: "США",
+                poster: "https://avatars.mds.yandex.net/i?id=ce8319add08a3324fa36e18c04e9a827_l-7086399-images-thumbs&n=13",
+                synopsis: "По книгам «Паттон: испытания и триумф» и «История солдата» генерала Омара Н. Брэдли. Биография генерала Джорджа Паттона, чей темперамент часто оказывал влияние на ход военных действий во время второй мировой войны."
+            },
+            {
+                title: "Чёрная книга",
+                link: "https://www.kinopoisk.ru/film/78079/",
+                rating: 7.7,
+                year: "2006",
+                location: "Амстердам, Нидерланды",
+                lat: 52.3676,
+                lng: 4.9041,
+                genre: "триллер, драма, военный",
+                country: "Нидерланды, Германия, Великобритания, Бельгия",
+                poster: "https://i.pinimg.com/736x/09/04/4e/09044e549c6bcbee93348c91c19ee966.jpg",
+                synopsis: "Вторая мировая война. Рахиль Штайн - немка еврейского происхождения. Спасаясь от фашистского геноцида, она находит пристанище в Нидерландах, где присоединяется к движению Сопротивления. Рахиль непременно должна найти предателя, по вине которого погибла вся ее семья. Отныне месть - смысл ее жизни..."
+            },
+            {
+                title: "Мюнхен: На грани войны",
+                link: "https://www.kinopoisk.ru/film/1338907/",
+                rating: 6.7,
+                year: "2021",
+                location: "Мюнхен, Германия",
+                lat: 48.1397,
+                lng: 11.5757,
+                genre: "биография, драма, история",
+                country: "Великобритания, США",
+                poster: "https://avatars.mds.yandex.net/i?id=bef056dfb8ea132a491bab7c653921a7_l-5869255-images-thumbs&n=13",
+                synopsis: "Осень 1938 года, Европа на грани войны. Гитлер готовится к вторжению в Чехословакию, и правительство Великобритании во главе с Невиллом Чемберленом отчаянно пытается найти мирное решение. Британский госслужащий Хью Легат и немецкий дипломат Пауль фон Хартманн отправляются в Мюнхен на экстренную конференцию. После начала переговоров старые друзья оказываются в эпицентре политических интриг и осознают всю опасность положения."
+            },
+            {
+                title: "12-й человек",
+                link: "https://www.kinopoisk.ru/film/807122/",
+                rating: 6.7,
+                year: "2017",
+                location: "п-ов Линген, Норвегия",
+                lat: 69.5,
+                lng: 20.0,
+                genre: "триллер, драма, военный",
+                country: "Норвегия",
+                poster: "https://i.pinimg.com/736x/e5/41/54/e54154e03cacf68f345765fc57be0f42.jpg",
+                synopsis: "Группа бойцов норвежского сопротивления получает задание добраться до северо-западного норвежского побережья на судне «Браттхольм» и совершить диверсию на одной из немецких авиационных баз. Но миссия потерпела фиаско еще в море: судно было атаковано немецким кораблем и потоплено. Единственным человеком, которому удалось спастись, оказался Ян Болсруд. Ему удается добраться до берега и бежать в сторону шведской границы. Преследуемый гестапо, Болсруд ищет убежище в горах. Здесь его настигает снежная буря, он прячется в пещере, которая оказывается смертельной ловушкой."
+            },
+            {
+                title: "Коридор бессмертия",
+                link: "https://www.kinopoisk.ru/film/893835/",
+                rating: 7.3,
+                year: "2019",
+                location: "Жд-станция Войбокало, СССР",
+                lat: 59.9417,
+                lng: 31.5067,
+                genre: "драма, военный, история",
+                country: "Россия",
+                poster: "https://www.1c-interes.ru/images/2021/03/31480347_koridor_bessmertia_dvd_1.jpg",
+                synopsis: "Вчерашняя ленинградская школьница Маша Яблочкина после лютой блокадной зимы 1941-1942 года приходит на железнодорожные курсы в надежде выжить и набраться сил. Оттуда девушку отправляют на строительство Шлиссельбургской магистрали, соединяющей город с Большой землей и находящейся в прямой видимости немецкой артиллерии. Так героиня попадает в 48-ю паровозную колонну особого резерва НКПС, которой ценой смертельного риска предстоит доставить в Ленинград 75% всех грузов и военного снаряжения."
+            },
+            {//80 фильм
+                title: "Белый тигр",
+                link: "https://www.kinopoisk.ru/film/573602/",
+                rating: 5.9,
+                year: "2012",
+                location: "Курск, СССР",
+                lat: 51.5167,
+                lng: 36.1500,
+                genre: "военный, триллер, история",
+                country: "Россия",
+                poster: "https://avatars.mds.yandex.net/i?id=e06e102a4e779104456f0911fa0f47df_l-4219938-images-thumbs&n=13",
+                synopsis: "Вторая мировая война подходит к концу. Тяжёлые затяжные бои изматывают обе стороны. Но чем увереннее наступают советские войска, тем чаще на полях сражений появляется огромный неуязвимый немецкий танк «Белый тигр»: внезапно возникает в дыму сражений, безжалостно расстреливает противников и неожиданно исчезает. Советское командование решает для борьбы с «Белым тигром» создать особый танк — специальную модель Т-34-85."
+            },
+            {
+                title: "Воровка книг",
+                link: "https://www.kinopoisk.ru/film/757898/",
+                rating: 7.8,
+                year: "2013",
+                location: "Мюнхен, Германия",
+                lat: 48.3,
+                lng: 11.6,
+                genre: "драма, военный",
+                country: "Германия, США, Великобритания",
+                poster: "https://i.pinimg.com/736x/2e/cf/4c/2ecf4c2ebb5596dc171913dbc72143ab.jpg",
+                synopsis: "Германия, канун Второй мировой войны. Смерть готовится начать свою жатву. Девятилетняя Лизель переезжает в Мюнхен к своим приемным родителям и с их помощью учится читать. С каждым днем чтение становится ее жизненной потребностью, и Лизель начинает воровать книги — единственную отраду ее жизни. Все, что она узнает из них, помогает ей понять события, происходящие вокруг нее — гонение на евреев, антифашистское движение, унижения и голод. Все это, в конце концов, сложится в ее собственную историю, историю ее жизни."
+            },
+        ];
+
+        // Переменные для хранения данных
+        let markers = [];
+        let tooltip = document.getElementById('tooltip');
+
+        // Функция для получения цвета маркера по жанру
+        function getMarkerColor() {
+            return '#FF4500';
+        }
+
+        function getRatingClass(rating) {
+    // Преобразуем рейтинг в число (убираем возможные символы)
+            const numRating = parseFloat(rating.toString().replace('%', ''));
+
+            if (numRating >= 7.0) {
+                return 'rating-high';
+            } else if (numRating >= 5.0) {
+                return 'rating-medium';
+            } else if (numRating >= 4.0) {
+                return 'rating-average';
+            } else {
+                return 'rating-low';
+            }
+        }
+
+        window.addEventListener('resize', function() {
+    // При изменении размера окна скрываем подсказку
+            hideFilmTooltip();
+        });
+
+        function updateTooltipPosition(x, y) {
+            const tooltipWidth = tooltip.offsetWidth;
+            const tooltipHeight = tooltip.offsetHeight;
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            let finalX = x + 15;
+            let finalY = y - tooltipHeight / 2;
+
+    // Проверяем правую границу
+            if (finalX + tooltipWidth > windowWidth) {
+              finalX = x - tooltipWidth - 15;
+              tooltip.classList.add('right-aligned');
+              tooltip.classList.remove('left-aligned');
+            } else {
+              tooltip.classList.add('left-aligned');
+              tooltip.classList.remove('right-aligned');
+            }
+
+    // Проверяем нижнюю границу
+            if (finalY + tooltipHeight > windowHeight) {
+              finalY = windowHeight - tooltipHeight - 10;
+            }
+
+    // Проверяем верхнюю границу
+            if (finalY < 10) {
+              finalY = 10;
+            }
+
+            tooltip.style.left = finalX + 'px';
+            tooltip.style.top = finalY + 'px';
+          }
+
+        // Функция для отображения фильмов на карте
+        function displayMovie(movie) {
+            // Создаем маркер
+            const marker = L.marker([movie.lat, movie.lng], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div class="film-marker" style="background-color: #FF4500;"></div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(map);
+
+            // Добавляем обработчики событий для маркера
+            marker.on('mouseover', function(e) {
+                // Показываем подсказку при наведении
+                tooltip.innerHTML = `
+                <div class="film-tooltip">
+                  <div class="film-header">
+                    <div class="film-title">${movie.title}</div>
+                    <img src="${movie.poster}" style="width: 150px; height: auto;" alt="${movie.title}" class="movie-poster">
+                  </div>
+                  <div class="rating-container">
+                    <a href="${movie.link}" target="_blank">
+                      <img src="https://theblueprint.ru/upload/36565/logo.png" class="kinopoisk-logo">
+                    </a>
+                    <div class="movie-rating ${getRatingClass(movie.rating)}">${movie.rating}★</div>
+                  </div>
+                    <div class="film-location">
+                        ${movie.location}
+                    </div>
+                </div>
+                `;
+                updateTooltipPosition(e.originalEvent.pageX, e.originalEvent.pageY);
+                tooltip.classList.add('active');
+            });
+
+            marker.on('mouseout', function() {
+                // Скрываем подсказку при уходе курсора
+                tooltip.classList.remove('active');
+            });
+
+            marker.on('click', function() {
+                // Показываем боковое меню с информацией о фильме
+                showMovieInfo(movie);
+            });
+
+            // Сохраняем маркер в массиве
+            markers.push({
+                id: movie.id,
+                marker: marker,
+                title: movie.title,
+                link: movie.link,
+                rating: movie.rating,
+                year: movie.year,
+                location: movie.location,
+                genre: movie.genre,
+                country: movie.country,
+                poster: movie.poster,
+                synopsis: movie.synopsis,
+                lat: movie.lat,
+                lng: movie.lng
+            });
+
+            return marker;
+        }
+
+        // Функция для отображения информации о фильме в боковом меню
+        function showMovieInfo(movie) {
+            const movieInfo = document.getElementById('movie-info');
+            const sidebar = document.getElementById('sidebar');
+
+            sidebar.scrollTop = 0;
+
+            // Формируем HTML с информацией о фильме
+            let infoHTML = `
+              <img src="${movie.poster}" alt="${movie.title}" class="movie-poster">
+
+              <div class="conteiner-title-kino">
+                  <div class="movie-title">${movie.title}<br>(${movie.year})</div>
+                  <div class="rating-container-rgiht">
+                      <a href="${movie.link}" target="_blank" rel="noopener noreferrer">
+                          <img src="https://theblueprint.ru/upload/36565/logo.png" class="kinopoisk-logo" alt="Кинопоиск">
+                      </a>
+                      <div class="movie-rating ${getRatingClass(movie.rating)}">${movie.rating}★</div>
+                  </div>
+              </div>
+              <div class="movie-detail">Место действия: ${movie.location}</div>
+              <div class="movie-detail">Жанр: ${movie.genre}</div>
+              <div class="movie-detail">Страна производства: ${movie.country}</div>
+
+              <div class="movie-synopsis">${movie.synopsis}</div>
+              `;
+
+            movieInfo.innerHTML = infoHTML;
+            sidebar.classList.add('active');
+
+            centerMapWithOffset(movie.lat, movie.lng);
+        }
+
+        // Функция для закрытия бокового меню
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('active');
+        }
+
+        function centerMapWithOffset(lat, lng) {
+            const sidebar = document.getElementById('sidebar');
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+        // На мобильных - меню снизу, центруем по верхней части
+                const mapHeight = map.getSize().y;
+                const offsetY = -mapHeight * 0.2; // Сдвигаем точку выше
+
+                map.setView([lat - 0.9, lng], 8, {
+                    animate: true,
+                    duration: 1,
+                    offset: [0, offsetY]
+                });
+            } else {
+        // На десктопе - меню справа, центруем по левой части
+                const mapWidth = map.getSize().x;
+                const sidebarWidth = sidebar.offsetWidth;
+                const offsetX = -sidebarWidth / 2; // Сдвигаем точку левее
+
+                map.setView([lat, lng + 1], 8, {
+                    animate: true,
+                    duration: 1,
+                    offset: [offsetX, 0]
+                });
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            // Отображаем фильмы на карте
+            movies.forEach(movie => {
+                displayMovie(movie);
+            });
+
+            // Добавляем обработчик для кнопки закрытия бокового меню
+            document.getElementById('close-sidebar').addEventListener('click', closeSidebar);
+
+            console.log('Все фильмы загружены на карту');
+        });
+    </script>
+</body>
+</html>
